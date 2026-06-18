@@ -1,0 +1,21 @@
+@PosLajuWebhookCapture_HostAddress = http://localhost:5079
+@Password = changeme
+
+### Health check (gated behind the shared secret)
+GET {{PosLajuWebhookCapture_HostAddress}}/health
+X-Password: {{Password}}
+
+### Capture a PosLaju webhook (body + headers stored verbatim, always 200)
+POST {{PosLajuWebhookCapture_HostAddress}}/poslaju
+Content-Type: application/json
+
+{
+  "account_no": "ACC123456",
+  "tracking_number": "ELM123456789MY",
+  "event_code": "LM_SUCCESS",
+  "date_time": "2026-06-18 14:30:00"
+}
+
+### Process all unprocessed captured events
+POST {{PosLajuWebhookCapture_HostAddress}}/process
+X-Password: {{Password}}
