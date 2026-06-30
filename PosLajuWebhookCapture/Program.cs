@@ -94,7 +94,7 @@ namespace PosLajuWebhookCapture
                 .AllowAnonymous()
                 .WithName("PoslajuWebhook");
             
-            app.MapPost("/mbb", async (HttpContext httpContext, ApplicationDbContext db, CancellationToken ct) =>
+            app.MapPost("/{bankType}", async (string bankType, HttpContext httpContext, ApplicationDbContext db, CancellationToken ct) =>
                 {
                     using var reader = new StreamReader(httpContext.Request.Body);
                     var rawBody = await reader.ReadToEndAsync(ct);
@@ -104,7 +104,7 @@ namespace PosLajuWebhookCapture
 
                     // Capture the webhook verbatim. We always persist and always return 200 — never leak whether
                     // a body was recognized (no-info-leak / always-2xx contract); downstream processing is offline.
-                    var record = new CourierWebhookEvent("MBB", rawBody, headersJson)
+                    var record = new CourierWebhookEvent(bankType, rawBody, headersJson)
                     {
                         CreatedBy = "system",
                         CreatedDate = DateTime.UtcNow
@@ -116,55 +116,7 @@ namespace PosLajuWebhookCapture
                     return Results.Ok();
                 })
                 .AllowAnonymous()
-                .WithName("MbbWebhook");
-            
-            app.MapPost("/pbb", async (HttpContext httpContext, ApplicationDbContext db, CancellationToken ct) =>
-                {
-                    using var reader = new StreamReader(httpContext.Request.Body);
-                    var rawBody = await reader.ReadToEndAsync(ct);
-
-                    var headers = httpContext.Request.Headers.ToDictionary(h => h.Key, h => h.Value.ToString());
-                    var headersJson = JsonSerializer.Serialize(headers);
-
-                    // Capture the webhook verbatim. We always persist and always return 200 — never leak whether
-                    // a body was recognized (no-info-leak / always-2xx contract); downstream processing is offline.
-                    var record = new CourierWebhookEvent("PBB", rawBody, headersJson)
-                    {
-                        CreatedBy = "system",
-                        CreatedDate = DateTime.UtcNow
-                    };
-
-                    db.CourierWebhookEvents.Add(record);
-                    await db.SaveChangesAsync(ct);
-
-                    return Results.Ok();
-                })
-                .AllowAnonymous()
-                .WithName("PbbWebhook");
-            
-            app.MapPost("/rhb", async (HttpContext httpContext, ApplicationDbContext db, CancellationToken ct) =>
-                {
-                    using var reader = new StreamReader(httpContext.Request.Body);
-                    var rawBody = await reader.ReadToEndAsync(ct);
-
-                    var headers = httpContext.Request.Headers.ToDictionary(h => h.Key, h => h.Value.ToString());
-                    var headersJson = JsonSerializer.Serialize(headers);
-
-                    // Capture the webhook verbatim. We always persist and always return 200 — never leak whether
-                    // a body was recognized (no-info-leak / always-2xx contract); downstream processing is offline.
-                    var record = new CourierWebhookEvent("RHB", rawBody, headersJson)
-                    {
-                        CreatedBy = "system",
-                        CreatedDate = DateTime.UtcNow
-                    };
-
-                    db.CourierWebhookEvents.Add(record);
-                    await db.SaveChangesAsync(ct);
-
-                    return Results.Ok();
-                })
-                .AllowAnonymous()
-                .WithName("RhbWebhook");
+                .WithName("bankWebhook");
 
             app.MapPost("/process", async (HttpContext httpContext, ApplicationDbContext db, PosLajuWebhookService service, CancellationToken ct) =>
                 {
